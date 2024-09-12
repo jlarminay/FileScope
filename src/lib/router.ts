@@ -1,9 +1,10 @@
 import { createMemoryHistory, createRouter } from 'vue-router';
 
 import HomeRoutes from '../modules/home/router';
-import AboutRoutes from '../modules/about/router';
+import ScanningRoutes from '../modules/scanning/router';
+import ResultsRoutes from '../modules/results/router';
 
 export default createRouter({
   history: createMemoryHistory(),
-  routes: [...HomeRoutes, ...AboutRoutes],
+  routes: [...HomeRoutes, ...ScanningRoutes, ...ResultsRoutes],
 });
