@@ -131,12 +131,7 @@ const currentPercentage = computed(() => {
           class="tw_rounded tw_mt-4"
           :value="currentPercentage"
         />
-        <div v-if="preparing" class="tw_flex tw_gap-4 tw_justify-center tw_items-center">
-          <p class="tw_mt-2 tw_text-sm tw_text-gray-500 tw_truncate tw_animate-bounce">
-            Preparing Files
-          </p>
-        </div>
-        <div v-else class="tw_flex tw_gap-4 tw_px-1 tw_justify-between tw_items-center">
+        <div class="tw_flex tw_gap-4 tw_px-1 tw_justify-between tw_items-center">
           <p class="tw_mt-2 tw_text-sm tw_text-gray-500 tw_truncate">
             {{ currentFile }}
           </p>
