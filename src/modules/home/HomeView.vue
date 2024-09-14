@@ -26,9 +26,9 @@ async function folderSelect() {
   if (result) {
     showError.value = false;
     if (Array.isArray(result)) {
-      scanDataStore.target.path = result[0];
+      scanDataStore.target.path = result[0].replace(/\\/g, '/');
     } else {
-      scanDataStore.target.path = result;
+      scanDataStore.target.path = result.replace(/\\/g, '/');
     }
   }
 }
@@ -67,9 +67,12 @@ async function startScan() {
             <q-btn round icon="sym_o_folder" flat @click="folderSelect" />
           </template>
         </q-input>
-        <q-checkbox v-model="scanDataStore.target.gitignore" label="Use .gitignore" />
+        <div class="tw_flex tw_gap-8">
+          <q-checkbox v-model="scanDataStore.target.gitignore" dense label="Use .gitignore" />
+          <q-checkbox v-model="scanDataStore.target.skipGit" dense label="Skip .git folder" />
+        </div>
 
-        <q-btn label="Scan Folder" unelevated color="primary" class="tw_mt-4" @click="startScan" />
+        <q-btn label="Scan Folder" unelevated color="primary" class="tw_mt-8" @click="startScan" />
       </q-form>
     </div>
   </div>

@@ -2,7 +2,7 @@
 import { useScanDataStore } from '@/stores/scanData.store';
 import dayjs from 'dayjs';
 import { formatSize, formatDuration } from '@/lib/functions';
-import { SummaryField, FilesTable, SystemVersion } from './components';
+import { SummaryField, FilesTable, SystemVersion, SpecificResults } from './components';
 
 const scanDataStore = useScanDataStore();
 </script>
@@ -44,9 +44,9 @@ const scanDataStore = useScanDataStore();
         class="tw_w-1/4"
       />
       <SummaryField
-        title="Empty Folders"
-        :value="scanDataStore.results.folders.empty.toString()"
-        icon="sym_o_folder_open"
+        title="Skipped Files"
+        :value="scanDataStore.results.files.skipped.toString()"
+        icon="sym_o_fast_forward"
         iconColor="tw_text-green-500"
         class="tw_w-1/4"
       />
@@ -87,7 +87,7 @@ const scanDataStore = useScanDataStore();
             :key="i"
           >
             <p class="tw_text-sm tw_leading-tight tw_text-gray-500">{{ entry.label }}</p>
-            <p class="tw_text-lg tw_font-bold tw_leading-tight">
+            <p class="tw_text-base tw_font-bold tw_leading-tight">
               {{ entry.value }}
               <span class="tw_font-light tw_text-gray-400 tw_text-xs tw_ml-1">
                 ({{ entry.mini }})
@@ -97,10 +97,17 @@ const scanDataStore = useScanDataStore();
         </div>
       </div>
       <div class="tw_bg-white tw_rounded-lg tw_p-6 tw_w-2/5">
-        <pre>{{ scanDataStore.results.files.extensions }}</pre>
+        <pre>{{ scanDataStore.results.files.types }}</pre>
       </div>
     </div>
 
+    <div class="tw_flex tw_gap-4 tw_mb-4">
+      <div class="tw_bg-white tw_rounded-lg tw_p-6 tw_w-full">
+        <SpecificResults :typeData="scanDataStore.results.files.specifics" />
+      </div>
+    </div>
+
+    <!-- Raw Data -->
     <div class="tw_flex tw_gap-4 tw_mb-4">
       <div class="tw_bg-white tw_rounded-lg tw_p-6 tw_w-full">
         <FilesTable :rowData="scanDataStore.results.rawData" :baseUrl="scanDataStore.target.path" />

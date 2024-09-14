@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
+use image::{GenericImageView, open};
 
 // Define a struct for the metadata response
 #[derive(Serialize)]
@@ -51,4 +52,12 @@ fn system_time_to_number(system_time: SystemTime) -> Result<u64, String> {
     system_time.duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs())
         .map_err(|err| format!("Error converting system time: {:?}", err))
+}
+
+
+#[tauri::command]
+pub fn get_image_info(image_path: String) -> Result<(u32, u32), String> {
+    let img = open(image_path).map_err(|e| format!("Failed to open image: {}", e))?;
+    let (width, height) = img.dimensions();
+    Ok((width, height))
 }

@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useScanDataStore } from '@/stores/scanData.store';
-import { flattenDir, getFileMetadata } from '@/lib/functions';
+import { getAllFiles, analyzeFile } from '@/lib/functions';
 import { useRouter } from 'vue-router';
+import ignore from 'ignore';
 
-import { readDir, exists, readTextFile } from '@tauri-apps/api/fs';
+import { exists, readTextFile } from '@tauri-apps/api/fs';
 
 const router = useRouter();
 const scanDataStore = useScanDataStore();
 
-const preparing = ref(true);
 const currentCount = ref(0);
 const currentFile = ref('');
 
@@ -17,92 +17,43 @@ onMounted(async () => {
   const finalCounts = scanDataStore.results;
   finalCounts.scan.start = Date.now();
 
-  let ignoreFile = '';
-  if (scanDataStore.target.gitignore && (await exists(scanDataStore.target.path + '/.gitignore'))) {
-    ignoreFile = await readTextFile(scanDataStore.target.path + '/.gitignore');
+  const allFiles = await getAllFiles(scanDataStore.target.path);
+  scanDataStore.results.total.files = allFiles.length;
+
+  // set ignore rules
+  const ig = ignore();
+  if (scanDataStore.target.gitignore) {
+    // check if gitignore exists
+    if (await exists(`${scanDataStore.target.path}/.gitignore`)) {
+      const gitignore = await readTextFile(`${scanDataStore.target.path}/.gitignore`);
+      ig.add(gitignore.toString());
+    }
+  }
+  if (scanDataStore.target.skipGit) {
+    ig.add('.git');
   }
 
-  // get total files count
-  const dir = await readDir(scanDataStore.target.path, { recursive: true });
-  const flatDir = flattenDir(dir, ignoreFile, scanDataStore.target.path);
-  scanDataStore.results.total.files = flatDir.length;
-
-  // stop preparing
-  preparing.value = false;
-
   // start scanning
-  for (const file of flatDir) {
-    currentFile.value = file.path.replace(scanDataStore.target.path, '');
+  for (const file of allFiles) {
+    currentFile.value = file.replace(scanDataStore.target.path, '');
 
-    // if folder
-    if (!file.file) {
-      // do stuff for folder
-      finalCounts.folders.total++;
-
-      if (!file.children || file.children === 0) {
-        finalCounts.folders.empty++;
-      }
+    // check if file should be skipped
+    if (ig.ignores(file)) {
+      finalCounts.files.skipped++;
+      currentCount.value++;
+      continue;
     }
 
-    // if file
-    if (file.file) {
-      /*
-      What do i want to know?
-      - when was the file created
-      - when was the file last modified
-      - how big is the file
-      - what is the file extension
-      - check specific file types
-        - images
-          - what is the resolution
-        - videos
-          - what is the resolution
-          - what is the length
-        - audio
-          - what is the length
-        - text (txt, md, vue, js, ts, etc)
-          - how many lines
-          - how many words
-      */
-      const results = await getFileMetadata(file.path);
+    // analyze file
+    await analyzeFile(scanDataStore.target.path, finalCounts, file);
 
-      finalCounts.rawData.push(results);
-
-      finalCounts.total.size += results.size;
-      finalCounts.files.total++;
-      finalCounts.files.extensions[results.extension as string] = finalCounts.files.extensions[
-        results.extension as string
-      ]
-        ? finalCounts.files.extensions[results.extension as string] + 1
-        : 1;
-
-      // check for first and last file
-      if (results.created < finalCounts.files.first.date) {
-        finalCounts.files.first.date = results.created;
-        finalCounts.files.first.path = results.path;
-      }
-      if (results.created > finalCounts.files.last.date) {
-        finalCounts.files.last.date = results.created;
-        finalCounts.files.last.path = results.path;
-      }
-
-      // check for largest file
-      if (results.size > finalCounts.files.largest.size) {
-        finalCounts.files.largest.size = results.size;
-        finalCounts.files.largest.path = results.path;
-      }
-    }
-
-    if (scanDataStore.results.total.files < 100) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
     currentCount.value++;
   }
 
   finalCounts.scan.end = Date.now();
 
   // finished analyzing
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   currentCount.value = 0;
   currentFile.value = '';
   router.push('/results');
@@ -127,7 +78,7 @@ const currentPercentage = computed(() => {
         <q-linear-progress
           stripe
           size="20px"
-          animation-speed="250"
+          animation-speed="100"
           class="tw_rounded tw_mt-4"
           :value="currentPercentage"
         />
